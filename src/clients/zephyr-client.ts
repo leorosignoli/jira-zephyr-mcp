@@ -1,0 +1,200 @@
+import axios, { AxiosInstance } from 'axios';
+import { appConfig, getZephyrHeaders } from '../utils/config.js';
+import {
+  ZephyrTestPlan,
+  ZephyrTestCycle,
+  ZephyrTestExecution,
+  ZephyrTestCase,
+  ZephyrTestReport,
+  ZephyrExecutionSummary,
+} from '../types/zephyr-types.js';
+
+export class ZephyrClient {
+  private client: AxiosInstance;
+
+  constructor() {
+    this.client = axios.create({
+      baseURL: `${appConfig.JIRA_BASE_URL}/rest/atm/1.0`,
+      headers: getZephyrHeaders(),
+      timeout: 30000,
+    });
+  }
+
+  async createTestPlan(data: {
+    name: string;
+    description?: string;
+    projectKey: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<ZephyrTestPlan> {
+    const payload = {
+      name: data.name,
+      objective: data.description,
+      projectKey: data.projectKey,
+      plannedStartDate: data.startDate,
+      plannedEndDate: data.endDate,
+    };
+
+    const response = await this.client.post('/testplan', payload);
+    return response.data;
+  }
+
+  async getTestPlans(projectKey: string, limit = 50, offset = 0): Promise<{
+    testPlans: ZephyrTestPlan[];
+    total: number;
+  }> {
+    const params = {
+      projectKey,
+      maxResults: limit,
+      startAt: offset,
+    };
+
+    const response = await this.client.get('/testplan/search', { params });
+    return {
+      testPlans: response.data.values,
+      total: response.data.total,
+    };
+  }
+
+  async createTestCycle(data: {
+    name: string;
+    description?: string;
+    projectKey: string;
+    versionId: string;
+    environment?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<ZephyrTestCycle> {
+    const payload = {
+      name: data.name,
+      description: data.description,
+      projectKey: data.projectKey,
+      versionId: data.versionId,
+      environment: data.environment,
+      plannedStartDate: data.startDate,
+      plannedEndDate: data.endDate,
+    };
+
+    const response = await this.client.post('/testrun', payload);
+    return response.data;
+  }
+
+  async getTestCycles(projectKey: string, versionId?: string, limit = 50): Promise<{
+    testCycles: ZephyrTestCycle[];
+    total: number;
+  }> {
+    const params = {
+      projectKey,
+      versionId,
+      maxResults: limit,
+    };
+
+    const response = await this.client.get('/testrun/search', { params });
+    return {
+      testCycles: response.data.values,
+      total: response.data.total,
+    };
+  }
+
+  async getTestExecution(executionId: string): Promise<ZephyrTestExecution> {
+    const response = await this.client.get(`/testresult/${executionId}`);
+    return response.data;
+  }
+
+  async updateTestExecution(data: {
+    executionId: string;
+    status: 'Pass' | 'Fail' | 'In Progress' | 'Blocked';
+    comment?: string;
+    defects?: string[];
+  }): Promise<ZephyrTestExecution> {
+    const payload = {
+      status: data.status,
+      comment: data.comment,
+      issues: data.defects?.map(key => ({ key })),
+    };
+
+    const response = await this.client.put(`/testresult/${data.executionId}`, payload);
+    return response.data;
+  }
+
+  async getTestExecutionSummary(cycleId: string): Promise<ZephyrExecutionSummary> {
+    const response = await this.client.get(`/testrun/${cycleId}/testresults`);
+    const executions = response.data.values;
+
+    const summary = executions.reduce(
+      (acc: any, execution: any) => {
+        acc.total++;
+        switch (execution.status) {
+          case 'Pass':
+            acc.passed++;
+            break;
+          case 'Fail':
+            acc.failed++;
+            break;
+          case 'Blocked':
+            acc.blocked++;
+            break;
+          case 'In Progress':
+            acc.inProgress++;
+            break;
+          default:
+            acc.notExecuted++;
+        }
+        return acc;
+      },
+      { total: 0, passed: 0, failed: 0, blocked: 0, inProgress: 0, notExecuted: 0 }
+    );
+
+    summary.passRate = summary.total > 0 ? (summary.passed / summary.total) * 100 : 0;
+    return summary;
+  }
+
+  async linkTestCaseToIssue(testCaseId: string, issueKey: string): Promise<void> {
+    const payload = {
+      issueKeys: [issueKey],
+    };
+
+    await this.client.post(`/testcase/${testCaseId}/links`, payload);
+  }
+
+  async generateTestReport(cycleId: string): Promise<ZephyrTestReport> {
+    const cycleResponse = await this.client.get(`/testrun/${cycleId}`);
+    const cycle = cycleResponse.data;
+
+    const executionsResponse = await this.client.get(`/testrun/${cycleId}/testresults`);
+    const executions = executionsResponse.data.values;
+
+    const summary = await this.getTestExecutionSummary(cycleId);
+
+    return {
+      cycleId,
+      cycleName: cycle.name,
+      projectKey: cycle.projectKey,
+      summary,
+      executions,
+      generatedOn: new Date().toISOString(),
+    };
+  }
+
+  async getTestCase(testCaseId: string): Promise<ZephyrTestCase> {
+    const response = await this.client.get(`/testcase/${testCaseId}`);
+    return response.data;
+  }
+
+  async searchTestCases(projectKey: string, query?: string, limit = 50): Promise<{
+    testCases: ZephyrTestCase[];
+    total: number;
+  }> {
+    const params = {
+      projectKey,
+      query,
+      maxResults: limit,
+    };
+
+    const response = await this.client.get('/testcase/search', { params });
+    return {
+      testCases: response.data.values,
+      total: response.data.total,
+    };
+  }
+}
