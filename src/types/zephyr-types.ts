@@ -57,21 +57,53 @@ export interface ZephyrTestExecution {
 }
 
 export interface ZephyrTestCase {
-  id: string;
+  id: number;
   key: string;
   name: string;
-  description?: string;
-  projectId: string;
-  status: string;
-  priority: string;
+  objective?: string;
+  precondition?: string;
   estimatedTime?: number;
+  labels?: string[];
   createdOn: string;
-  updatedOn: string;
-  testSteps: Array<{
-    step: string;
-    data?: string;
-    result?: string;
-  }>;
+  project?: {
+    id: number;
+    self: string;
+  };
+  component?: {
+    id: number;
+    self: string;
+  };
+  priority?: {
+    id: number;
+    self: string;
+  };
+  status?: {
+    id: number;
+    self: string;
+  };
+  folder?: {
+    id: number;
+    self: string;
+  };
+  owner?: {
+    self: string;
+    accountId: string;
+  };
+  testScript?: {
+    self: string;
+  };
+  customFields?: Record<string, any>;
+  links?: {
+    self: string;
+    issues?: Array<{
+      self: string;
+      issueId: number;
+      id: number;
+      target: string;
+      type: string;
+    }>;
+    webLinks?: any[];
+  };
 }
 
 export interface ZephyrExecutionSummary {

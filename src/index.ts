@@ -16,6 +16,7 @@ import {
   linkTestsToIssues,
   generateTestReport,
 } from './tools/test-execution.js';
+import { createTestCase, searchTestCases, getTestCase } from './tools/test-cases.js';
 
 const server = new Server(
   {
@@ -149,6 +150,74 @@ const TOOLS = [
       required: ['cycleId'],
     },
   },
+  {
+    name: 'create_test_case',
+    description: 'Create a new test case in Zephyr',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectKey: { type: 'string', description: 'JIRA project key' },
+        name: { type: 'string', description: 'Test case name' },
+        objective: { type: 'string', description: 'Test case objective/description (optional)' },
+        precondition: { type: 'string', description: 'Test preconditions (optional)' },
+        estimatedTime: { type: 'number', description: 'Estimated execution time in minutes (optional)' },
+        priority: { type: 'string', description: 'Test case priority (optional)' },
+        status: { type: 'string', description: 'Test case status (optional)' },
+        folderId: { type: 'string', description: 'Folder ID to organize test case (optional)' },
+        labels: { type: 'array', items: { type: 'string' }, description: 'Test case labels (optional)' },
+        componentId: { type: 'string', description: 'Component ID (optional)' },
+        customFields: { type: 'object', description: 'Custom fields as key-value pairs (optional)' },
+        testScript: {
+          type: 'object',
+          description: 'Test script with steps (optional)',
+          properties: {
+            type: { type: 'string', enum: ['STEP_BY_STEP', 'PLAIN_TEXT'], description: 'Script type' },
+            steps: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  index: { type: 'number', description: 'Step number' },
+                  description: { type: 'string', description: 'Step description' },
+                  testData: { type: 'string', description: 'Test data (optional)' },
+                  expectedResult: { type: 'string', description: 'Expected result' },
+                },
+                required: ['index', 'description', 'expectedResult'],
+              },
+              description: 'Test steps (for STEP_BY_STEP type)',
+            },
+            text: { type: 'string', description: 'Plain text script (for PLAIN_TEXT type)' },
+          },
+          required: ['type'],
+        },
+      },
+      required: ['projectKey', 'name'],
+    },
+  },
+  {
+    name: 'search_test_cases',
+    description: 'Search for test cases in a project',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectKey: { type: 'string', description: 'JIRA project key' },
+        query: { type: 'string', description: 'Search query (optional)' },
+        limit: { type: 'number', description: 'Maximum number of results (default: 50)' },
+      },
+      required: ['projectKey'],
+    },
+  },
+  {
+    name: 'get_test_case',
+    description: 'Get detailed information about a specific test case',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        testCaseId: { type: 'string', description: 'Test case ID or key' },
+      },
+      required: ['testCaseId'],
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -246,6 +315,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(await generateTestReport(args as any), null, 2),
+            },
+          ],
+        };
+
+      case 'create_test_case':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(await createTestCase(args as any), null, 2),
+            },
+          ],
+        };
+
+      case 'search_test_cases':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(await searchTestCases(args as any), null, 2),
+            },
+          ],
+        };
+
+      case 'get_test_case':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(await getTestCase(args as any), null, 2),
             },
           ],
         };

@@ -197,4 +197,67 @@ export class ZephyrClient {
       total: response.data.total || response.data.length,
     };
   }
+
+  async createTestCase(data: {
+    projectKey: string;
+    name: string;
+    objective?: string;
+    precondition?: string;
+    estimatedTime?: number;
+    priority?: string;
+    status?: string;
+    folderId?: string;
+    labels?: string[];
+    componentId?: string;
+    customFields?: Record<string, any>;
+    testScript?: {
+      type: 'STEP_BY_STEP' | 'PLAIN_TEXT';
+      steps?: Array<{
+        index: number;
+        description: string;
+        testData?: string;
+        expectedResult: string;
+      }>;
+      text?: string;
+    };
+  }): Promise<ZephyrTestCase> {
+    const payload: any = {
+      projectKey: data.projectKey,
+      name: data.name,
+      objective: data.objective,
+      precondition: data.precondition,
+      estimatedTime: data.estimatedTime,
+    };
+
+    if (data.priority) {
+      payload.priority = data.priority;
+    }
+
+    if (data.status) {
+      payload.status = data.status;
+    }
+
+    if (data.folderId) {
+      payload.folderId = data.folderId;
+    }
+
+    if (data.labels && data.labels.length > 0) {
+      payload.labels = data.labels;
+    }
+
+    if (data.componentId) {
+      payload.componentId = data.componentId;
+    }
+
+    if (data.customFields) {
+      payload.customFields = data.customFields;
+    }
+
+    if (data.testScript) {
+      payload.testScript = data.testScript;
+    }
+
+    const response = await this.client.post('/testcases', payload);
+    return response.data;
+  }
 }
