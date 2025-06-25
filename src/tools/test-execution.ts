@@ -16,16 +16,9 @@ export const executeTest = async (input: ExecuteTestInput) => {
   const validatedInput = executeTestSchema.parse(input);
   
   try {
-    const statusMap = {
-      'PASS': 'Pass',
-      'FAIL': 'Fail',
-      'WIP': 'In Progress',
-      'BLOCKED': 'Blocked',
-    } as const;
-    
     const execution = await zephyrClient.updateTestExecution({
       executionId: validatedInput.executionId,
-      status: statusMap[validatedInput.status],
+      status: validatedInput.status,
       comment: validatedInput.comment,
       defects: validatedInput.defects,
     });

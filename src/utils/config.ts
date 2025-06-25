@@ -8,7 +8,6 @@ const configSchema = z.object({
   JIRA_USERNAME: z.string().email(),
   JIRA_API_TOKEN: z.string().min(1),
   ZEPHYR_API_TOKEN: z.string().min(1),
-  ZEPHYR_ACCESS_KEY: z.string().min(1).optional(),
 });
 
 const validateConfig = () => {
@@ -30,20 +29,8 @@ export const getJiraAuth = () => ({
 });
 
 export const getZephyrHeaders = () => {
-  // For Zephyr Scale Cloud, we can try both approaches:
-  // 1. JWT token directly as Bearer token (current approach)
-  // 2. zapiAccessKey + Authorization JWT (standard approach)
-  
-  const headers: any = {
+  return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${appConfig.ZEPHYR_API_TOKEN}`,
   };
-  
-  // If access key is provided, use the standard Zephyr Scale approach
-  if (appConfig.ZEPHYR_ACCESS_KEY) {
-    headers['zapiAccessKey'] = appConfig.ZEPHYR_ACCESS_KEY;
-    headers['Authorization'] = `JWT ${appConfig.ZEPHYR_API_TOKEN}`;
-  }
-  
-  return headers;
 };

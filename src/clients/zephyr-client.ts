@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { appConfig, getZephyrHeaders } from '../utils/config.js';
+import { getZephyrHeaders } from '../utils/config.js';
 import {
   ZephyrTestPlan,
   ZephyrTestCycle,
@@ -14,7 +14,7 @@ export class ZephyrClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: 'https://prod-api.zephyr4jiracloud.com/connect',
+      baseURL: 'https://api.zephyrscale.smartbear.com/v2',
       headers: getZephyrHeaders(),
       timeout: 30000,
     });
@@ -35,7 +35,7 @@ export class ZephyrClient {
       plannedEndDate: data.endDate,
     };
 
-    const response = await this.client.post('/public/rest/api/1.0/testplan', payload);
+    const response = await this.client.post('/testplans', payload);
     return response.data;
   }
 
@@ -49,7 +49,7 @@ export class ZephyrClient {
       startAt: offset,
     };
 
-    const response = await this.client.get('/public/rest/api/1.0/testplans', { params });
+    const response = await this.client.get('/testplans', { params });
     return {
       testPlans: response.data.values || response.data,
       total: response.data.total || response.data.length,
@@ -75,7 +75,7 @@ export class ZephyrClient {
       plannedEndDate: data.endDate,
     };
 
-    const response = await this.client.post('/public/rest/api/1.0/testcycles', payload);
+    const response = await this.client.post('/testcycles', payload);
     return response.data;
   }
 
@@ -89,7 +89,7 @@ export class ZephyrClient {
       maxResults: limit,
     };
 
-    const response = await this.client.get('/public/rest/api/1.0/testcycles', { params });
+    const response = await this.client.get('/testcycles', { params });
     return {
       testCycles: response.data.values || response.data,
       total: response.data.total || response.data.length,
@@ -97,13 +97,13 @@ export class ZephyrClient {
   }
 
   async getTestExecution(executionId: string): Promise<ZephyrTestExecution> {
-    const response = await this.client.get(`/public/rest/api/1.0/testexecutions/${executionId}`);
+    const response = await this.client.get(`/testexecutions/${executionId}`);
     return response.data;
   }
 
   async updateTestExecution(data: {
     executionId: string;
-    status: 'Pass' | 'Fail' | 'In Progress' | 'Blocked';
+    status: 'PASS' | 'FAIL' | 'WIP' | 'BLOCKED';
     comment?: string;
     defects?: string[];
   }): Promise<ZephyrTestExecution> {
@@ -113,28 +113,28 @@ export class ZephyrClient {
       issues: data.defects?.map(key => ({ key })),
     };
 
-    const response = await this.client.put(`/public/rest/api/1.0/testexecutions/${data.executionId}`, payload);
+    const response = await this.client.put(`/testexecutions/${data.executionId}`, payload);
     return response.data;
   }
 
   async getTestExecutionSummary(cycleId: string): Promise<ZephyrExecutionSummary> {
-    const response = await this.client.get(`/public/rest/api/1.0/testcycles/${cycleId}/testexecutions`);
+    const response = await this.client.get(`/testcycles/${cycleId}/testexecutions`);
     const executions = response.data.values;
 
     const summary = executions.reduce(
       (acc: any, execution: any) => {
         acc.total++;
         switch (execution.status) {
-          case 'Pass':
+          case 'PASS':
             acc.passed++;
             break;
-          case 'Fail':
+          case 'FAIL':
             acc.failed++;
             break;
-          case 'Blocked':
+          case 'BLOCKED':
             acc.blocked++;
             break;
-          case 'In Progress':
+          case 'WIP':
             acc.inProgress++;
             break;
           default:
@@ -154,14 +154,14 @@ export class ZephyrClient {
       issueKeys: [issueKey],
     };
 
-    await this.client.post(`/public/rest/api/1.0/testcases/${testCaseId}/links`, payload);
+    await this.client.post(`/testcases/${testCaseId}/links`, payload);
   }
 
   async generateTestReport(cycleId: string): Promise<ZephyrTestReport> {
-    const cycleResponse = await this.client.get(`/public/rest/api/1.0/testcycles/${cycleId}`);
+    const cycleResponse = await this.client.get(`/testcycles/${cycleId}`);
     const cycle = cycleResponse.data;
 
-    const executionsResponse = await this.client.get(`/public/rest/api/1.0/testcycles/${cycleId}/testexecutions`);
+    const executionsResponse = await this.client.get(`/testcycles/${cycleId}/testexecutions`);
     const executions = executionsResponse.data.values || executionsResponse.data;
 
     const summary = await this.getTestExecutionSummary(cycleId);
@@ -177,7 +177,7 @@ export class ZephyrClient {
   }
 
   async getTestCase(testCaseId: string): Promise<ZephyrTestCase> {
-    const response = await this.client.get(`/public/rest/api/1.0/testcases/${testCaseId}`);
+    const response = await this.client.get(`/testcases/${testCaseId}`);
     return response.data;
   }
 
@@ -191,7 +191,7 @@ export class ZephyrClient {
       maxResults: limit,
     };
 
-    const response = await this.client.get('/public/rest/api/1.0/testcases/search', { params });
+    const response = await this.client.get('/testcases/search', { params });
     return {
       testCases: response.data.values || response.data,
       total: response.data.total || response.data.length,
