@@ -6,13 +6,20 @@ import {
   ListTestPlansInput,
 } from '../utils/validation.js';
 
-const zephyrClient = new ZephyrClient();
+let zephyrClient: ZephyrClient | null = null;
+
+const getZephyrClient = (): ZephyrClient => {
+  if (!zephyrClient) {
+    zephyrClient = new ZephyrClient();
+  }
+  return zephyrClient;
+};
 
 export const createTestPlan = async (input: CreateTestPlanInput) => {
   const validatedInput = createTestPlanSchema.parse(input);
   
   try {
-    const testPlan = await zephyrClient.createTestPlan({
+    const testPlan = await getZephyrClient().createTestPlan({
       name: validatedInput.name,
       description: validatedInput.description,
       projectKey: validatedInput.projectKey,
@@ -45,7 +52,7 @@ export const listTestPlans = async (input: ListTestPlansInput) => {
   const validatedInput = listTestPlansSchema.parse(input);
   
   try {
-    const result = await zephyrClient.getTestPlans(
+    const result = await getZephyrClient().getTestPlans(
       validatedInput.projectKey,
       validatedInput.limit,
       validatedInput.offset
@@ -77,7 +84,7 @@ export const listTestPlans = async (input: ListTestPlansInput) => {
 
 export const getTestPlan = async (input: { testPlanId: string }) => {
   try {
-    const result = await zephyrClient.getTestPlans('', 1, 0);
+    const result = await getZephyrClient().getTestPlans('', 1, 0);
     const testPlan = result.testPlans.find(plan => plan.id === input.testPlanId);
     
     if (!testPlan) {

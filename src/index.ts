@@ -17,6 +17,20 @@ import {
   generateTestReport,
 } from './tools/test-execution.js';
 import { createTestCase, searchTestCases, getTestCase } from './tools/test-cases.js';
+import {
+  readJiraIssueSchema,
+  createTestPlanSchema,
+  listTestPlansSchema,
+  createTestCycleSchema,
+  listTestCyclesSchema,
+  executeTestSchema,
+  getTestExecutionStatusSchema,
+  linkTestsToIssuesSchema,
+  generateTestReportSchema,
+  createTestCaseSchema,
+  searchTestCasesSchema,
+  getTestCaseSchema,
+} from './utils/validation.js';
 
 const server = new Server(
   {
@@ -25,7 +39,9 @@ const server = new Server(
   },
   {
     capabilities: {
-      tools: {},
+      tools: {
+        listChanged: false,
+      },
     },
   }
 );
@@ -224,151 +240,209 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: TOOLS,
 }));
 
+const validateInput = <T>(schema: any, input: unknown, toolName: string): T => {
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    const errors = result.error.errors.map((err: any) => `${err.path.join('.')}: ${err.message}`);
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `Invalid parameters for ${toolName}:\n${errors.join('\n')}`
+    );
+  }
+  return result.data;
+};
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args = {} } = request.params;
 
   try {
     switch (name) {
-      case 'read_jira_issue':
+      case 'read_jira_issue': {
+        const validatedArgs = validateInput(readJiraIssueSchema, args, 'read_jira_issue');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await readJiraIssue(args as any), null, 2),
+              text: JSON.stringify(await readJiraIssue(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'create_test_plan':
+      case 'create_test_plan': {
+        const validatedArgs = validateInput(createTestPlanSchema, args, 'create_test_plan');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await createTestPlan(args as any), null, 2),
+              text: JSON.stringify(await createTestPlan(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'list_test_plans':
+      case 'list_test_plans': {
+        const validatedArgs = validateInput(listTestPlansSchema, args, 'list_test_plans');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await listTestPlans(args as any), null, 2),
+              text: JSON.stringify(await listTestPlans(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'create_test_cycle':
+      case 'create_test_cycle': {
+        const validatedArgs = validateInput(createTestCycleSchema, args, 'create_test_cycle');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await createTestCycle(args as any), null, 2),
+              text: JSON.stringify(await createTestCycle(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'list_test_cycles':
+      case 'list_test_cycles': {
+        const validatedArgs = validateInput(listTestCyclesSchema, args, 'list_test_cycles');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await listTestCycles(args as any), null, 2),
+              text: JSON.stringify(await listTestCycles(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'execute_test':
+      case 'execute_test': {
+        const validatedArgs = validateInput(executeTestSchema, args, 'execute_test');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await executeTest(args as any), null, 2),
+              text: JSON.stringify(await executeTest(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'get_test_execution_status':
+      case 'get_test_execution_status': {
+        const validatedArgs = validateInput(getTestExecutionStatusSchema, args, 'get_test_execution_status');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await getTestExecutionStatus(args as any), null, 2),
+              text: JSON.stringify(await getTestExecutionStatus(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'link_tests_to_issues':
+      case 'link_tests_to_issues': {
+        const validatedArgs = validateInput(linkTestsToIssuesSchema, args, 'link_tests_to_issues');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await linkTestsToIssues(args as any), null, 2),
+              text: JSON.stringify(await linkTestsToIssues(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'generate_test_report':
+      case 'generate_test_report': {
+        const validatedArgs = validateInput(generateTestReportSchema, args, 'generate_test_report');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await generateTestReport(args as any), null, 2),
+              text: JSON.stringify(await generateTestReport(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'create_test_case':
+      case 'create_test_case': {
+        const validatedArgs = validateInput(createTestCaseSchema, args, 'create_test_case');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await createTestCase(args as any), null, 2),
+              text: JSON.stringify(await createTestCase(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'search_test_cases':
+      case 'search_test_cases': {
+        const validatedArgs = validateInput(searchTestCasesSchema, args, 'search_test_cases');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await searchTestCases(args as any), null, 2),
+              text: JSON.stringify(await searchTestCases(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
-      case 'get_test_case':
+      case 'get_test_case': {
+        const validatedArgs = validateInput(getTestCaseSchema, args, 'get_test_case');
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(await getTestCase(args as any), null, 2),
+              text: JSON.stringify(await getTestCase(validatedArgs), null, 2),
             },
           ],
         };
+      }
 
       default:
-        throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+        throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
     }
-  } catch (error) {
-    if (error instanceof McpError) {
-      throw error;
-    }
-    
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${errorMessage}`);
+    throw new McpError(ErrorCode.InternalError, `Error executing tool '${name}': ${errorMessage}`);
   }
 });
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('Jira Zephyr MCP server running on stdio');
+  try {
+    console.error('Starting Jira Zephyr MCP server...');
+    
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    
+    console.error('Jira Zephyr MCP server running...');
+    
+    // Handle graceful shutdown
+    process.on('SIGINT', () => {
+      console.error('Received SIGINT, shutting down gracefully...');
+      process.exit(0);
+    });
+    
+    process.on('SIGTERM', () => {
+      console.error('Received SIGTERM, shutting down gracefully...');
+      process.exit(0);
+    });
+
+    // Keep the process alive
+    await new Promise(() => {});
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Failed to start MCP server:', errorMessage);
+    if (errorMessage.includes('Configuration validation failed')) {
+      console.error('Please check your environment variables and try again.');
+    }
+    process.exit(1);
+  }
 }
 
-main().catch((error) => {
-  console.error('Failed to start server:', error);
+main().catch((err) => {
+  console.error('Unexpected error during server startup:', err);
   process.exit(1);
 });

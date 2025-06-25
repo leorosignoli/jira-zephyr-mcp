@@ -86,6 +86,10 @@ export const searchTestCasesSchema = z.object({
   limit: z.number().min(1).max(100).default(50),
 });
 
+export const getTestCaseSchema = z.object({
+  testCaseId: z.string().min(1, 'Test case ID is required'),
+});
+
 export type CreateTestPlanInput = z.infer<typeof createTestPlanSchema>;
 export type CreateTestCycleInput = z.infer<typeof createTestCycleSchema>;
 export type ReadJiraIssueInput = z.infer<typeof readJiraIssueSchema>;
@@ -97,3 +101,4 @@ export type LinkTestsToIssuesInput = z.infer<typeof linkTestsToIssuesSchema>;
 export type GenerateTestReportInput = z.infer<typeof generateTestReportSchema>;
 export type CreateTestCaseInput = z.infer<typeof createTestCaseSchema>;
 export type SearchTestCasesInput = z.infer<typeof searchTestCasesSchema>;
+export type GetTestCaseInput = z.infer<typeof getTestCaseSchema>;

@@ -6,13 +6,20 @@ import {
   SearchTestCasesInput,
 } from '../utils/validation.js';
 
-const zephyrClient = new ZephyrClient();
+let zephyrClient: ZephyrClient | null = null;
+
+const getZephyrClient = (): ZephyrClient => {
+  if (!zephyrClient) {
+    zephyrClient = new ZephyrClient();
+  }
+  return zephyrClient;
+};
 
 export const createTestCase = async (input: CreateTestCaseInput) => {
   const validatedInput = createTestCaseSchema.parse(input);
   
   try {
-    const testCase = await zephyrClient.createTestCase({
+    const testCase = await getZephyrClient().createTestCase({
       projectKey: validatedInput.projectKey,
       name: validatedInput.name,
       objective: validatedInput.objective,
@@ -62,7 +69,7 @@ export const searchTestCases = async (input: SearchTestCasesInput) => {
   const validatedInput = searchTestCasesSchema.parse(input);
   
   try {
-    const result = await zephyrClient.searchTestCases(
+    const result = await getZephyrClient().searchTestCases(
       validatedInput.projectKey,
       validatedInput.query,
       validatedInput.limit
@@ -101,7 +108,7 @@ export const searchTestCases = async (input: SearchTestCasesInput) => {
 
 export const getTestCase = async (input: { testCaseId: string }) => {
   try {
-    const testCase = await zephyrClient.getTestCase(input.testCaseId);
+    const testCase = await getZephyrClient().getTestCase(input.testCaseId);
     
     return {
       success: true,

@@ -1,13 +1,14 @@
 import axios, { AxiosInstance } from 'axios';
-import { appConfig, getJiraAuth } from '../utils/config.js';
+import { getAppConfig, getJiraAuth } from '../utils/config.js';
 import { JiraIssue, JiraProject, JiraVersion } from '../types/jira-types.js';
 
 export class JiraClient {
   private client: AxiosInstance;
 
   constructor() {
+    const config = getAppConfig();
     this.client = axios.create({
-      baseURL: `${appConfig.JIRA_BASE_URL}/rest/api/3`,
+      baseURL: `${config.JIRA_BASE_URL}/rest/api/3`,
       auth: getJiraAuth(),
       headers: {
         'Content-Type': 'application/json',

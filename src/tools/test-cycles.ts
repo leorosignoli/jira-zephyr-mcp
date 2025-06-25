@@ -6,13 +6,20 @@ import {
   ListTestCyclesInput,
 } from '../utils/validation.js';
 
-const zephyrClient = new ZephyrClient();
+let zephyrClient: ZephyrClient | null = null;
+
+const getZephyrClient = (): ZephyrClient => {
+  if (!zephyrClient) {
+    zephyrClient = new ZephyrClient();
+  }
+  return zephyrClient;
+};
 
 export const createTestCycle = async (input: CreateTestCycleInput) => {
   const validatedInput = createTestCycleSchema.parse(input);
   
   try {
-    const testCycle = await zephyrClient.createTestCycle({
+    const testCycle = await getZephyrClient().createTestCycle({
       name: validatedInput.name,
       description: validatedInput.description,
       projectKey: validatedInput.projectKey,
@@ -51,7 +58,7 @@ export const listTestCycles = async (input: ListTestCyclesInput) => {
   const validatedInput = listTestCyclesSchema.parse(input);
   
   try {
-    const result = await zephyrClient.getTestCycles(
+    const result = await getZephyrClient().getTestCycles(
       validatedInput.projectKey,
       validatedInput.versionId,
       validatedInput.limit
@@ -100,7 +107,7 @@ export const listTestCycles = async (input: ListTestCyclesInput) => {
 
 export const getTestCycle = async (input: { cycleId: string }) => {
   try {
-    const result = await zephyrClient.getTestCycles('', undefined, 1000);
+    const result = await getZephyrClient().getTestCycles('', undefined, 1000);
     const testCycle = result.testCycles.find(cycle => cycle.id === input.cycleId);
     
     if (!testCycle) {
