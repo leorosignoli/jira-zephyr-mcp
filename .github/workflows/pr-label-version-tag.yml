@@ -1,17 +1,17 @@
 # When a PR to main is merged and has one of these labels, create the next semver tag
 # from the latest matching tag on the repo (merge commit is tagged).
 #
-# Labels (create under Issues → Labels). Names are matched exactly; aliases below also work:
-#   major bump: tag-major | semver-major | release-major
-#   minor bump: tag-minor | semver-minor | release-minor
-#   patch bump: tag-patch | semver-patch | release-patch | patch-minor
+# Labels (create them under Issues → Labels if they do not exist yet):
+#   tag-major  → bump major (v1.2.3 → v2.0.0)
+#   tag-minor  → bump minor (v1.2.3 → v1.3.0)
+#   tag-patch  → bump patch (v1.2.3 → v1.2.4)
 #
 # If more than one label is present, precedence is: tag-major > tag-minor > tag-patch.
 # If none of these labels are on the merged PR, this workflow does nothing.
 #
-# Docker release: pushes made with the default GITHUB_TOKEN do NOT trigger other workflows
-# (see GitHub docs: triggering a workflow from a workflow). Set repo secret GH_TOKEN to a
-# PAT with contents:write so git push here starts docker-release.yml on the new tag.
+# Tag pushes made with GITHUB_TOKEN do not start other workflows. After pushing the tag we
+# explicitly dispatch Docker (release) (workflow_dispatch) — that is allowed and starts the
+# image build without needing a PAT. Optional GH_TOKEN is still used for git push if set.
 #
 # Fork PRs are skipped (no contents: write on untrusted code).
 name: Version tag from PR label
@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # required to gh workflow run → Docker (release)
 
 jobs:
   tag:
@@ -38,29 +39,19 @@ jobs:
         run: |
           set -euo pipefail
           BUMP=$(echo "$LABELS_JSON" | jq -r '
-            def has($n): any(.[]; .name == $n);
-            if has("tag-major") or has("semver-major") or has("release-major") then "major"
-            elif has("tag-minor") or has("semver-minor") or has("release-minor") then "minor"
-            elif has("tag-patch") or has("semver-patch") or has("release-patch") or has("patch-minor") then "patch"
+            if any(.[]; .name == "tag-major") then "major"
+            elif any(.[]; .name == "tag-minor") then "minor"
+            elif any(.[]; .name == "tag-patch") then "patch"
             else empty
             end
           ')
           if [ -z "${BUMP:-}" ]; then
-            echo "No release bump label — skipping (need tag-major/tag-minor/tag-patch or aliases; see workflow header)."
+            echo "No tag-major / tag-minor / tag-patch label — skipping."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
-
-      - name: Warn if GH_TOKEN missing (Docker release will not auto-run)
-        if: steps.bump.outputs.skip == 'false'
-        env:
-          HAS_GH_PAT: ${{ secrets.GH_TOKEN != '' }}
-        run: |
-          if [ "$HAS_GH_PAT" != "true" ]; then
-            echo "::warning::GH_TOKEN secret is not set. Tag push uses github.token, which does NOT trigger docker-release.yml. Add a PAT with contents:write as GH_TOKEN, or run Actions → Docker (release) with your new tag."
-          fi
 
       - name: Checkout merge commit
         if: steps.bump.outputs.skip == 'false'
@@ -72,10 +63,10 @@ jobs:
 
       - name: Compute next tag and push
         if: steps.bump.outputs.skip == 'false'
+        id: tagpush
         env:
           BUMP: ${{ steps.bump.outputs.bump }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          # PAT required for tag push to trigger docker-release.yml; GITHUB_TOKEN pushes are ignored for downstream workflows.
           PUSH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
         run: |
           set -euo pipefail
@@ -105,6 +96,8 @@ jobs:
             exit 1
           fi
 
+          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -114,3 +107,15 @@ jobs:
           git push origin "$NEW_TAG"
 
           echo "Created and pushed $NEW_TAG"
+
+      - name: Dispatch Docker (release) workflow
+        if: steps.bump.outputs.skip == 'false' && steps.tagpush.outputs.new_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run docker-release.yml \
+            --repo "${{ github.repository }}" \
+            --ref main \
+            -f tag="${{ steps.tagpush.outputs.new_tag }}"
+          echo "Dispatched Docker (release) for ${{ steps.tagpush.outputs.new_tag }}"
