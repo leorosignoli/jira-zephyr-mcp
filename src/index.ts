@@ -30,6 +30,7 @@ import {
   createTestCaseSchema,
   searchTestCasesSchema,
   getTestCaseSchema,
+  getTestStepsSchema,
   createMultipleTestCasesSchema,
   ReadJiraIssueInput,
   CreateTestPlanInput,
@@ -43,6 +44,7 @@ import {
   CreateTestCaseInput,
   SearchTestCasesInput,
   GetTestCaseInput,
+  GetTestStepsInput,
   CreateMultipleTestCasesInput,
 } from './utils/validation.js';
 
@@ -244,6 +246,17 @@ const TOOLS = [
       type: 'object',
       properties: {
         testCaseId: { type: 'string', description: 'Test case ID or key' },
+      },
+      required: ['testCaseId'],
+    },
+  },
+  {
+    name: 'get_test_steps',
+    description: 'Get all test steps for a specific test case',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        testCaseId: { type: 'string', description: 'Test case ID or key (e.g., MSTW-T67)' },
       },
       required: ['testCaseId'],
     },
@@ -465,6 +478,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(await getTestCase(validatedArgs), null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_test_steps': {
+        const validatedArgs = validateInput<GetTestStepsInput>(getTestStepsSchema, args, 'get_test_steps');
+        const zephyrClient = new (await import('./clients/zephyr-client.js')).ZephyrClient();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(await zephyrClient.getTestSteps(validatedArgs.testCaseId), null, 2),
             },
           ],
         };

@@ -24,6 +24,11 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
 7. **get_test_execution_status** - Check test execution progress
 8. **link_tests_to_issues** - Associate tests with JIRA issues
 9. **generate_test_report** - Create test execution reports
+10. **create_test_case** - Create a new test case in Zephyr
+11. **create_multiple_test_cases** - Create multiple test cases at once
+12. **search_test_cases** - Search for test cases in a project
+13. **get_test_case** - Get detailed information about a specific test case
+14. **get_test_steps** - Get all test steps for a specific test case
 
 ## Prerequisites
 
@@ -32,6 +37,29 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
 - Valid JIRA API credentials
 - Zephyr API access token
 
+
+### Integration with Claude Desktop
+
+Add the following to your `claude_desktop_config.json` (located at `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "jira-zephyr": {
+      "command": "/path/to/node",
+      "args": ["/path/to/jira-zephyr-mcp/dist/index.js"],
+      "env": {
+        "JIRA_BASE_URL": "https://your-domain.atlassian.net",
+        "JIRA_USERNAME": "your-email@company.com",
+        "JIRA_API_TOKEN": "your-jira-api-token",
+        "ZEPHYR_API_TOKEN": "your-zephyr-api-token"
+      }
+    }
+  }
+}
+```
+
+> **Note:** Use the full path to your Node.js binary (e.g. `/Users/you/.nvm/versions/node/v22.22.0/bin/node`) to avoid issues with nvm version resolution. Requires Node.js 18+.
 
 ### Integration with Cursor
 
@@ -242,6 +270,29 @@ await generateTestReport({
 });
 ```
 
+### Managing Test Cases
+```typescript
+// Create a test case with steps
+await createTestCase({
+  projectKey: "ABC",
+  name: "Login flow test",
+  objective: "Verify user can log in successfully",
+  testScript: {
+    type: "STEP_BY_STEP",
+    steps: [
+      { index: 1, description: "Open login page", expectedResult: "Login form is displayed" },
+      { index: 2, description: "Enter valid credentials", expectedResult: "User is redirected to dashboard" }
+    ]
+  }
+});
+
+// Search test cases
+await searchTestCases({ projectKey: "ABC", query: "login" });
+
+// Get test steps for a specific test case
+await getTestSteps({ testCaseId: "ABC-T42" });
+```
+
 ## Error Handling
 
 The server implements comprehensive error handling:
@@ -309,6 +360,7 @@ For issues and questions:
 - [ ] Support for Zephyr Squad (in addition to Zephyr Scale)
 - [ ] Bulk test execution operations
 - [ ] Advanced reporting with charts and metrics
-- [ ] Test case creation and management
+- [x] Test case creation and management
+- [x] Get test steps for a test case
 - [ ] Integration with CI/CD pipelines
 - [ ] Custom field support for test management
