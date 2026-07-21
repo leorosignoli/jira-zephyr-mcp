@@ -90,6 +90,10 @@ export const getTestCaseSchema = z.object({
   testCaseId: z.string().min(1, 'Test case ID is required'),
 });
 
+export const getTestStepsSchema = z.object({
+  testCaseId: z.string().min(1, 'Test case ID is required'),
+});
+
 export const createMultipleTestCasesSchema = z.object({
   testCases: z.array(createTestCaseSchema).min(1, 'At least one test case is required'),
   continueOnError: z.boolean().default(true),
@@ -107,4 +111,5 @@ export type GenerateTestReportInput = z.infer<typeof generateTestReportSchema>;
 export type CreateTestCaseInput = z.infer<typeof createTestCaseSchema>;
 export type SearchTestCasesInput = z.infer<typeof searchTestCasesSchema>;
 export type GetTestCaseInput = z.infer<typeof getTestCaseSchema>;
+export type GetTestStepsInput = z.infer<typeof getTestStepsSchema>;
 export type CreateMultipleTestCasesInput = z.infer<typeof createMultipleTestCasesSchema>;

@@ -181,6 +181,28 @@ export class ZephyrClient {
     return response.data;
   }
 
+  async getTestSteps(testCaseId: string): Promise<{
+    total: number;
+    steps: Array<{
+      id: number;
+      inline?: {
+        description: string;
+        testData: string | null;
+        expectedResult: string;
+      };
+      testCase?: {
+        testCaseKey: string;
+        parameters: Array<{ name: string; value: string }>;
+      };
+    }>;
+  }> {
+    const response = await this.client.get(`/testcases/${testCaseId}/teststeps`);
+    return {
+      total: response.data.total,
+      steps: response.data.values,
+    };
+  }
+
   async searchTestCases(projectKey: string, query?: string, limit = 50): Promise<{
     testCases: ZephyrTestCase[];
     total: number;
